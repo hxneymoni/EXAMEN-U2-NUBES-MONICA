@@ -1,0 +1,97 @@
+version: '3.8'
+
+services:
+  # base de datos Alumnos
+  db_alumnos:
+    image: mysql:latest
+    container_name: db_alumnos
+    environment:
+      MYSQL_ROOT_PASSWORD: moni123
+      MYSQL_DATABASE: alumnos
+      MYSQL_USER: alumnos_user
+      MYSQL_PASSWORD: moni123
+    volumes:
+      - db_alumnos_data:/var/lib/mysql
+      - ./alumnos.sql:/docker-entrypoint-initdb.d/alumnos.sql
+    networks:
+      - redmoni
+
+  #  base de datos Maestros
+  db_maestros:
+    image: mysql:latest
+    container_name: db_maestros
+    environment:
+      MYSQL_ROOT_PASSWORD: moni123
+      MYSQL_DATABASE: maestros
+      MYSQL_USER: maestros_user
+      MYSQL_PASSWORD: moni123
+    ports:
+      - "3307:3306" 
+    volumes:
+      - db_maestros_data:/var/lib/mysql
+      - ./maestros.sql:/docker-entrypoint-initdb.d/maestros.sql
+    networks:
+      - redmoni
+
+  # app Alumnos
+  alumnos:
+    build:
+      context: .
+      dockerfile: dockerfile_alumnos.yaml
+    container_name: alumnos_app
+    environment:
+      DB_HOST: db_alumnos
+      DB_NAME: alumnos
+      DB_USER: alumnos_user
+      DB_PASSWORD: moni123
+    depends_on:
+      - db_alumnos
+    ports:
+      - "8080:80"
+    networks:
+      - redmoni
+
+  # app Maestros
+  maestros:
+    build:
+      context: .
+      dockerfile: dockerfile_maestros.yaml
+    container_name: maestros_app
+    environment:
+      DB_HOST: db_maestros
+      DB_NAME: maestros
+      DB_USER: maestros_user
+      DB_PASSWORD: moni123
+      API_ALUMNO: alumnos_app:80
+    depends_on:
+      - db_maestros
+      - alumnos
+    ports:
+      - "8081:80"
+    networks:
+      - redmoni
+
+ 
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: phpmyadmin
+    environment:
+      PMA_ARBITRARY: 1
+      PMA_HOST: db_alumnos  
+      MYSQL_ROOT_PASSWORD: moni123
+    depends_on:
+      - db_alumnos
+      - db_maestros
+    ports:
+      - "8082:80"
+    networks:
+      - redmoni
+
+volumes:
+  db_alumnos_data:
+  db_maestros_data:
+
+networks:
+  redmoni:
+
+#MONICA MARTÍNEZ EXAMEN U2
